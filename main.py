@@ -53,7 +53,7 @@ response = client.responses.create(
 )
 
 #vê se a AI pediu uma ferramenta
-resultados_tools =[]
+
 while True:
     tool_chamada = False
 
@@ -65,9 +65,9 @@ while True:
             if item.name in funcoes:
                 args = json.loads(item.arguments)
                 funcao = funcoes[item.name]
-                resultados_tools = funcao(**args)
+                result = funcao(**args)
 
-            else: resultados_tools = {'erro': "Ferramenta não encontrada"}
+            else: result = {'erro': "Ferramenta não encontrada"}
 
                 #manda devolta para a AI a resposta da ferramenta
             response = client.responses.create(
