@@ -6,6 +6,28 @@ verbose = False
 sair = False
 reasoning_effort="minimal"
 
+#Memorias funções
+def read_chat():
+    with open("chat.json", "r", encoding="utf-8") as arquivo:
+        return json.load(arquivo)
+    
+def read_mem():
+    with open("mem.txt", "r", encoding="utf-8") as arquivo:
+        return arquivo.read()
+    
+def add_chat(role, text):
+    with open("chat.json", "r", encoding="utf-8") as arquivo:
+        h = json.load(arquivo)
+    h.append(
+        {"role":role, "content": [{"type":"input_text","text":text}]}
+    )
+    with open("chat.json", "w", encoding="utf-8") as arquivo:
+        json.dump(h, arquivo, ensure_ascii=False, indent=4)
+
+def write_mem(text):
+    with open("mem.txt", "w", encoding="utf-8") as arquivo:
+        arquivo.write(text)
+
 #CORES Ui Ui Ui
 CINZA = "\033[90m"
 NEGRITO = "\033[1m"

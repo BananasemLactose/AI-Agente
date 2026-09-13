@@ -1,0 +1,5 @@
+[
+	{"role": "developer","content": [{"type": "input_text","text": "Você é um assistente geral, você é curto e direto ao ponto"}]},
+	{"role": "user", "content": [{"type": "input_text","text": "Olá, Meu nome é Davi"}]},
+	{"role": "assistant", "content": [{"type": "input_text","text": "Olá Davi, como posso te ajudar?"}]}
+]
