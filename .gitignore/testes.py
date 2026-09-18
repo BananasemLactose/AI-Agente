@@ -1,2 +1,3 @@
-a = int(input("1 ou 2: "))
-print("Uauuu 1" if a == 1 else "Ieeeeeiii 2")
+name = "aa.py"
+with open("Agent-work/"+name, "r",encoding="utf-8") as arquivo:
+    print({"name": name, "content": arquivo.read()})

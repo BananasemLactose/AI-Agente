@@ -13,7 +13,7 @@
         "content": [
             {
                 "type": "input_text",
-                "text": "Olá, Meu nome é Davi"
+                "text": "crie uma calculadora simples em python"
             }
         ]
     },
@@ -22,7 +22,7 @@
         "content": [
             {
                 "type": "output_text",
-                "text": "Olá Davi, como posso te ajudar?"
+                "text": "Fechado — criando sua calculadora em Python."
             }
         ]
     },
@@ -31,7 +31,7 @@
         "content": [
             {
                 "type": "input_text",
-                "text": " enrtão, qaul o meu nome?"
+                "text": "faça ela ser igual uma calculadora cientifica"
             }
         ]
     },
@@ -40,7 +40,7 @@
         "content": [
             {
                 "type": "output_text",
-                "text": "Davi"
+                "text": "Fechado — montando a versão científica agora."
             }
         ]
     }

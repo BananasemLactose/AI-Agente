@@ -9,6 +9,7 @@ sair = False
 reasoning_effort="minimal"
 modelo = "muse-spark-1.3-contributor"
 
+
 #Memorias funções
 def read_chat():
     with open("chat.json", "r", encoding="utf-8") as arquivo:
@@ -30,6 +31,11 @@ def add_chat(role, text):
 def write_mem(text):
     with open("mem.txt", "w", encoding="utf-8") as arquivo:
         arquivo.write(text)
+
+def reset_chat(entrada):
+    if entrada == None: entrada = "Você é um assistente geral, seu nome é Pietro,você é curto e direto ao ponto"
+    with open("chat.json", "w", encoding="utf-8") as arquivo:
+        json.dump([{"role": "developer","content": [{"type": "input_text","text": entrada}]}], arquivo, ensure_ascii=False, indent=4)
 
 #CORES Ui Ui Ui
 CINZA = "\033[90m"
@@ -68,8 +74,9 @@ while True:
     entrada = input("Entrada: ")
 
 #comandos --<==================>--
-    if entrada.startswith("/"):
-        if entrada == "/": print("Comandos:\n/sair\n/debug\n/verbose\n/reasoning"); continue
+    if entrada.startswith("/"): 
+        entrada = entrada.lower()
+        if entrada == "/": print("Comandos:\n/sair\n/debug\n/verbose\n/reasoning\n/reset chat\n/developer"); continue
         elif entrada == "/sair":sair = True; break
         elif entrada == "/debug": print("/debug True\n/debug False"); continue
         elif entrada == "/debug True": debug = True; continue
@@ -83,6 +90,9 @@ while True:
         elif entrada == "/reasoning medium": reasoning_effort = "medium"; continue
         elif entrada == "/reasoning high": reasoning_effort = "high"; continue
         elif entrada == "/reasoning xhigh": reasoning_effort = "xhigh"; continue
+        elif entrada == "/reset chat": reset_chat(None); continue
+        elif entrada == "/developer": print("/deveoper Mensagem do sistema aqui"); continue
+        elif entrada.startswith("/developer") and entrada != "/developer": reset_chat(entrada.removeprefix("/developer")); print(f"Set to: {entrada.removeprefix("/developer")}"); continue
         else: print("Comando não encontrado"); continue
     #salvar no chat
     add_chat("user", entrada)
