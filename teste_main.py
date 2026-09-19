@@ -1,4 +1,4 @@
-import os, json 
+import os, json, requests
 from openai import OpenAI
 print("Hello World with AI!! 1.3")
 
@@ -9,6 +9,21 @@ sair = False
 reasoning_effort="minimal"
 modelo = "muse-spark-1.3-contributor"
 
+#Contador tokens
+def cont_token(text):
+    tokens = requests.post(
+        "https://api.meta.ai/v1/responses/input_tokens",
+        headers={
+            "Authorization": f"Bearer[{os.environ['MODEL_API_KEY']}]",
+            "Content-Type": "application/json",
+        },
+        json={
+            "model": modelo
+            "input": text
+        }
+    )
+    tokens.raise_for_status()
+    return (tokens.json()["input_tokens"])
 
 #Memorias funções
 def read_chat():
@@ -139,12 +154,13 @@ while True:
         previous_response_id=response.id,
         tools=tools,
         )
+    add_chat("assistant", response.output_text)
     print(response.output_text)
     if verbose:
         print(f'''
 {CINZA}verbose:
 Model: {response.model}
-reasoning: {reasoning}
+reasoning: {reasoning_effort}
 input tokens: {response.usage.input_tokens}
 output tokens: {response.usage.output_tokens}{RESET}''')
 
