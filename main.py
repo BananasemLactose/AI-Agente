@@ -1,10 +1,55 @@
-import os, json
+import os, json, requests
 from openai import OpenAI
-print("Hello World with AI!! 1.2")
+print("Hello World with AI!! 1.5")
+
+#Variaveis
 debug = False
 verbose = False
 sair = False
 reasoning_effort="minimal"
+modelo = "muse-spark-1.3-contributor"
+
+#Contador tokens
+def cont_token(text):
+    tokens = requests.post(
+        "https://api.meta.ai/v1/responses/input_tokens",
+        headers={
+            "Authorization": f"Bearer[{os.environ['MODEL_API_KEY']}]",
+            "Content-Type": "application/json",
+        },
+        json={
+            "model": modelo,
+            "input": text
+        }
+    )
+    tokens.raise_for_status()
+    return (tokens.json()["input_tokens"])
+#Memorias funções
+def read_chat():
+    with open("chat.json", "r", encoding="utf-8", errors="surrogateescape") as arquivo:
+        return json.load(arquivo)
+    
+def read_mem():
+    with open("mem.txt", "r", encoding="utf-8", errors="surrogateescape") as arquivo:
+        return arquivo.read()
+    
+def add_chat(role, text):
+    with open("chat.json", "r", encoding="utf-8", errors="surrogateescape") as arquivo:
+        h = json.load(arquivo)
+    h.append(
+        {"role":role, "content": [{"type":("output_text" if role == "assistant" else "input_text"),"text":text}]}
+    )
+    with open("chat.json", "w", encoding="utf-8", errors="surrogateescape") as arquivo:
+        json.dump(h, arquivo, ensure_ascii=False, indent=4)
+
+def write_mem(text):
+    with open("mem.txt", "w", encoding="utf-8", errors="surrogateescape") as arquivo:
+        arquivo.write(text)
+
+def reset_chat(entrada):
+    if entrada == None: entrada = "Você é um assistente geral, seu nome é Pietro,você é curto e direto ao ponto"
+    with open("chat.json", "w", encoding="utf-8", errors="surrogateescape") as arquivo:
+        json.dump([{"role": "developer","content": [{"type": "input_text","text": entrada}]}], arquivo, ensure_ascii=False, indent=4)
 
 #CORES Ui Ui Ui
 CINZA = "\033[90m"
@@ -12,95 +57,92 @@ NEGRITO = "\033[1m"
 ITALICO = "\033[3m"
 RESET = "\033[0m"
 
-
-modelo = "muse-spark-1.3-contributor"
 #ferramentas codigo-------------
-def clima(cidade):#dá o clima
-    if debug:
-        print(f"{CINZA}{ITALICO}Debug: tool clima usada{RESET}")
-        print(f"{CINZA}{ITALICO}Debug: O modelo deu como cidade:{cidade}{RESET}")
-    return {'Cidade': cidade, 'Clima': 'Chuvoso'}
-
-def posicao():
-    if debug:
-        print(f"{CINZA}{ITALICO}Debug: tool posicao usada{RESET}")
-    return {'Cidade': 'Campo Mourão'}
-
-def temperatura(cidade):
-    if debug:
-        print(f"{CINZA}{ITALICO}Debug: tool temperatura usada{RESET}")
-        print(f"{CINZA}{ITALICO}Debug: O modelo deu como cidade:{cidade}{RESET}")
-    return {'Cidade': cidade, 'Temperatura':'22 ºC'}
+def c_arquivo(content, name):
+    with open("Agent-work/"+name, "w",encoding="utf-8", errors="surrorgateescape") as arquivo:
+        arquivo.write(content)
+    return{"status": "sucess", "name": name}
+    
 #ferramentas descrição------------
 tools=[
         {
-            "type": "function", 
-            "name": "clima", 
-            "description": "Retorna o clma de uma cidade", 
-            "parameters": {
-                "type": "object",
-                "properties": {"cidade":{"type": "string", "description": "Nome da cidade, exemplo: New_York"}},
-                "required": ["cidade"]
-            }
-        },
-        {
             "type": "function",
-            "name": "posicao",
-            "description": "Retorna a cidade do usuario",
-            "parameters": {
-                "type": "object",
-                "properties": {}
-            }
-        },
-        {
-            "type": "function",
-            "name": "temperatura",
-            "description": "Retorna a temperatura de uma cidade neste momento",
-            "parameters": {"type": "object", "properties":{"cidade":{"type": "string", "description":"Nome da cidade, exemplo New_York"}},"required":["cidade"]}
+            "name": "c_arquivo",
+            "description": "Cria um arquivo contendo texto dentro, podendo ser scrips como arquivo.py por exemplo",
+            "parameters": {"type": "object", "properties":{"content":{"type": "string", "description": "O texto dentro do arquivo"}, "name": {"type": "string", "description": "o nome do arquivo, por exemmplo: main.py ou documento.txt"}}, "required": ["name", "content"]}
         }
     ]
 
 #Dicionario com comandos (UAUUUU!!!!!)
 funcoes = {
-    "clima": clima,
-    "posicao": posicao,
-    "temperatura":temperatura
+    "c_arquivo":c_arquivo
 }
 #cliente = Para quem mandar a mensagem?
-client = OpenAI(
-    api_key = os.environ["MODEL_API_KEY"],
-    base_url="https://api.meta.ai/v1",
-    )
+try:
+    client = OpenAI(
+        api_key = os.environ["MODEL_API_KEY"],
+        base_url="https://api.meta.ai/v1",
+        )
+except KeyError:
+    print("SEM META API")
+    print("Progama finalizado.")
+    exit()
 
+#mensagem para AI
+def api_input(txt, prev):
+    #manda para AI
+    if debug: print(f"{CINZA}{ITALICO}Debug: API request{RESET}")
+    if prev:
+        response = client.responses.create(
+            model=modelo,
+            reasoning = {"effort": reasoning_effort},
+            input = txt,
+            previous_response_id=response.id,
+            tools=tools,
+            )
+    else:
+        response = client.responses.create(
+            model=modelo,
+            reasoning = {"effort": reasoning_effort},
+            input = txt,
+            tools=tools,
+            )
 #loop PRINCIPAL
 while True:
     entrada = input("Entrada: ")
-    #comandos---
-    if entrada.startswith("/"):
-        if entrada == "/": print("Comandos:\n/sair\n/debug\n/verbose\n/reasoning"); continue
+    #comandos --<==================>--
+    if entrada.startswith("/"): 
+        entrada = entrada.lower()
+        if entrada == "/": print("Comandos:\n/sair\n/debug\n/verbose\n/reasoning\n/reset chat\n/developer"); continue
         elif entrada == "/sair":sair = True; break
-        elif entrada == "/debug": print("/debug True\n/debug False"); continue
-        elif entrada == "/debug True": debug = True; continue
-        elif entrada == "/debug False": debug = False; continue
-        elif entrada == "/verbose": print("/verbose True\n/verbose False"); continue
-        elif entrada == "/verbose True": verbose = True; continue
-        elif entrada == "/verbose False": verbose = False; continue
-        elif entrada == "/reasoning": print("/reasoning minimal (defalt)\n/reasoning low\n/reasoning medium\n/reasoning high\n/reasoning xhigh")
+        elif entrada == "/debug": print("/debug true\n/debug false"); continue
+        elif entrada == "/debug true": debug = True; continue
+        elif entrada == "/debug false": debug = False; continue
+        elif entrada == "/verbose": print("/verbose true\n/verbose false"); continue
+        elif entrada == "/verbose true": verbose = True; continue
+        elif entrada == "/verbose false": verbose = False; continue
+        elif entrada == "/reasoning": print("/reasoning minimal (defalt)\n/reasoning low\n/reasoning medium\n/reasoning high\n/reasoning xhigh"); continue
         elif entrada == "/reasoning minimal": reasoning_effort = "minimal"; continue
         elif entrada == "/reasoning low": reasoning_effort = "low"; continue
         elif entrada == "/reasoning medium": reasoning_effort = "medium"; continue
         elif entrada == "/reasoning high": reasoning_effort = "high"; continue
         elif entrada == "/reasoning xhigh": reasoning_effort = "xhigh"; continue
+        elif entrada == "/reset chat": reset_chat(None); continue
+        elif entrada == "/developer": print("/deveoper Mensagem do sistema aqui"); continue
+        elif entrada.startswith("/developer") and entrada != "/developer": reset_chat(entrada.removeprefix("/developer")); print(f"Set to: {entrada.removeprefix("/developer")}"); continue
         else: print("Comando não encontrado"); continue
-        
-
+    #salvar no chat
+    add_chat("user", entrada)
     #mandar para a AI-------------------
     if debug: print(f"{CINZA}{ITALICO}Debug: API request{RESET}")
     response = client.responses.create(
         model=modelo,
+        reasoning = {"effort": reasoning_effort},
         input=entrada,
         tools=tools,
     )
+    #salva no chat
+    add_chat("assistant", response.output_text)
 
     #vê se a AI pediu uma ferramenta
     while True:
@@ -111,7 +153,7 @@ while True:
 
                 if item.name in funcoes:
                     args = json.loads(item.arguments)
-                    funcao = funcoes[item.name]
+                    funcao =  funcoes[item.name]
                     result = funcao(**args)
 
                 else: result = {'erro': "Ferramenta não encontrada"}
@@ -132,8 +174,9 @@ while True:
         input = resultados_tools,
         previous_response_id=response.id,
         tools=tools,
-        reasoning_effort=reasoning_effort
+        reasoning = {"effort": reasoning_effort},
         )
+    add_chat("assistant", response.output_text)
     print(response.output_text)
     if verbose:
         print(f'''
@@ -143,4 +186,4 @@ reasoning: {reasoning_effort}
 input tokens: {response.usage.input_tokens}
 output tokens: {response.usage.output_tokens}{RESET}''')
 
-print("Progama finalizado")
+print("Progama finalizado.")

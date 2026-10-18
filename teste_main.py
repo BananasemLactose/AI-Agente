@@ -1,6 +1,6 @@
 import os, json, requests
 from openai import OpenAI
-print("Hello World with AI!! 1.3")
+print("Hello World with AI!! 1.5")
 
 #Variaveis
 debug = False
@@ -18,38 +18,37 @@ def cont_token(text):
             "Content-Type": "application/json",
         },
         json={
-            "model": modelo
+            "model": modelo,
             "input": text
         }
     )
     tokens.raise_for_status()
     return (tokens.json()["input_tokens"])
-
 #Memorias funções
 def read_chat():
-    with open("chat.json", "r", encoding="utf-8") as arquivo:
+    with open("chat.json", "r", encoding="utf-8", errors="surrogateescape") as arquivo:
         return json.load(arquivo)
     
 def read_mem():
-    with open("mem.txt", "r", encoding="utf-8") as arquivo:
+    with open("mem.txt", "r", encoding="utf-8", errors="surrogateescape") as arquivo:
         return arquivo.read()
     
 def add_chat(role, text):
-    with open("chat.json", "r", encoding="utf-8") as arquivo:
+    with open("chat.json", "r", encoding="utf-8", errors="surrogateescape") as arquivo:
         h = json.load(arquivo)
     h.append(
         {"role":role, "content": [{"type":("output_text" if role == "assistant" else "input_text"),"text":text}]}
     )
-    with open("chat.json", "w", encoding="utf-8") as arquivo:
+    with open("chat.json", "w", encoding="utf-8", errors="surrogateescape") as arquivo:
         json.dump(h, arquivo, ensure_ascii=False, indent=4)
 
 def write_mem(text):
-    with open("mem.txt", "w", encoding="utf-8") as arquivo:
+    with open("mem.txt", "w", encoding="utf-8", errors="surrogateescape") as arquivo:
         arquivo.write(text)
 
 def reset_chat(entrada):
     if entrada == None: entrada = "Você é um assistente geral, seu nome é Pietro,você é curto e direto ao ponto"
-    with open("chat.json", "w", encoding="utf-8") as arquivo:
+    with open("chat.json", "w", encoding="utf-8", errors="surrogateescape") as arquivo:
         json.dump([{"role": "developer","content": [{"type": "input_text","text": entrada}]}], arquivo, ensure_ascii=False, indent=4)
 
 #CORES Ui Ui Ui
@@ -60,7 +59,7 @@ RESET = "\033[0m"
 
 #ferramentas codigo-------------
 def c_arquivo(content, name):
-    with open("Agent-work/"+name, "w",encoding="utf-8") as arquivo:
+    with open("Agent-work/"+name, "w",encoding="utf-8", errors="surrorgateescape") as arquivo:
         arquivo.write(content)
     return{"status": "sucess", "name": name}
     
@@ -79,26 +78,51 @@ funcoes = {
     "c_arquivo":c_arquivo
 }
 #cliente = Para quem mandar a mensagem?
-client = OpenAI(
-    api_key = os.environ["MODEL_API_KEY"],
-    base_url="https://api.meta.ai/v1",
-    )
+try:
+    client = OpenAI(
+        api_key = os.environ["MODEL_API_KEY"],
+        base_url="https://api.meta.ai/v1",
+        )
+except KeyError:
+    print("SEM META API")
+    print("Progama finalizado.")
+    exit()
 
+#mensagem para AI
+def api_input(txt, prev):
+    #manda para AI
+    if debug: print(f"{CINZA}{ITALICO}Debug: API request{RESET}")
+    if prev:
+        response = client.responses.create(
+            model=modelo,
+            reasoning = {"effort": reasoning_effort},
+            input = txt,
+            previous_response_id=response.id,
+            tools=tools,
+            )
+    else:
+        response = client.responses.create(
+            model=modelo,
+            reasoning = {"effort": reasoning_effort},
+            input = txt,
+            tools=tools,
+            )
+    with open()
+    return response
 #loop PRINCIPAL
 while True:
     entrada = input("Entrada: ")
-
-#comandos --<==================>--
+    #comandos --<==================>--
     if entrada.startswith("/"): 
         entrada = entrada.lower()
         if entrada == "/": print("Comandos:\n/sair\n/debug\n/verbose\n/reasoning\n/reset chat\n/developer"); continue
         elif entrada == "/sair":sair = True; break
-        elif entrada == "/debug": print("/debug True\n/debug False"); continue
-        elif entrada == "/debug True": debug = True; continue
-        elif entrada == "/debug False": debug = False; continue
-        elif entrada == "/verbose": print("/verbose True\n/verbose False"); continue
-        elif entrada == "/verbose True": verbose = True; continue
-        elif entrada == "/verbose False": verbose = False; continue
+        elif entrada == "/debug": print("/debug true\n/debug false"); continue
+        elif entrada == "/debug true": debug = True; continue
+        elif entrada == "/debug false": debug = False; continue
+        elif entrada == "/verbose": print("/verbose true\n/verbose false"); continue
+        elif entrada == "/verbose true": verbose = True; continue
+        elif entrada == "/verbose false": verbose = False; continue
         elif entrada == "/reasoning": print("/reasoning minimal (defalt)\n/reasoning low\n/reasoning medium\n/reasoning high\n/reasoning xhigh"); continue
         elif entrada == "/reasoning minimal": reasoning_effort = "minimal"; continue
         elif entrada == "/reasoning low": reasoning_effort = "low"; continue
@@ -116,8 +140,8 @@ while True:
     response = client.responses.create(
         model=modelo,
         reasoning = {"effort": reasoning_effort},
-        input=read_chat(),
-        tools=tools
+        input=entrada,
+        tools=tools,
     )
     #salva no chat
     add_chat("assistant", response.output_text)
@@ -149,10 +173,10 @@ while True:
         if debug: print(f"{CINZA}{ITALICO}Debug: API request{RESET}")
         response = client.responses.create(
         model=modelo,
-        reasoning = {"effort": reasoning_effort},
         input = resultados_tools,
         previous_response_id=response.id,
         tools=tools,
+        reasoning = {"effort": reasoning_effort},
         )
     add_chat("assistant", response.output_text)
     print(response.output_text)

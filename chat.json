@@ -13,7 +13,7 @@
         "content": [
             {
                 "type": "input_text",
-                "text": "crie uma calculadora simples em python"
+                "text": "oi :)"
             }
         ]
     },
@@ -22,16 +22,7 @@
         "content": [
             {
                 "type": "output_text",
-                "text": "Fechado — criando sua calculadora em Python."
-            }
-        ]
-    },
-    {
-        "role": "user",
-        "content": [
-            {
-                "type": "input_text",
-                "text": "faça ela ser igual uma calculadora cientifica"
+                "text": "Oi! 😊 Tudo bem por aí?\n\nSou o Muse Spark, pronto pra ajudar! Quer criar um arquivo, um script, um texto, ou tirar alguma dúvida? Me conta o que você precisa!"
             }
         ]
     },
@@ -40,7 +31,7 @@
         "content": [
             {
                 "type": "output_text",
-                "text": "Fechado — montando a versão científica agora."
+                "text": "Oi! 😊 Tudo bem por aí?\n\nSou o Muse Spark, pronto pra ajudar! Quer criar um arquivo, um script, um texto, ou tirar alguma dúvida? Me conta o que você precisa!"
             }
         ]
     }
