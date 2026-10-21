@@ -1,6 +1,6 @@
 import os, json, requests
 from openai import OpenAI
-print("Hello World with AI!! 1.5")
+print("Hello World with AI!! 1.6")
 
 #Variaveis
 debug = False
@@ -62,7 +62,21 @@ def c_arquivo(content, name):
     with open("Agent-work/"+name, "w",encoding="utf-8", errors="surrorgateescape") as arquivo:
         arquivo.write(content)
     return{"status": "sucess", "name": name}
-    
+
+def r_arquivo(name):
+    with open("Agent-work/"+name, "r",encoding="utf-8", errors="surrorgateescape") as arquivo:
+        content = arquivo.read()
+    return{"status": "sucess", "name": name, "content": content}
+
+def l_arquivos():
+    arquivos = os.listdir("Agent-work/")
+    return {"status": "sucess", "arquivos": arquivos}
+
+def e_arquivo(content, name):
+    with open("Agent-work/"+name, "w", encoding="utf-8", errors="surrogateescape") as arquivo:
+        arquivo.write(content)
+    return {"status": "sucess", "name": name}
+
 #ferramentas descrição------------
 tools=[
         {
@@ -70,12 +84,33 @@ tools=[
             "name": "c_arquivo",
             "description": "Cria um arquivo contendo texto dentro, podendo ser scrips como arquivo.py por exemplo",
             "parameters": {"type": "object", "properties":{"content":{"type": "string", "description": "O texto dentro do arquivo"}, "name": {"type": "string", "description": "o nome do arquivo, por exemmplo: main.py ou documento.txt"}}, "required": ["name", "content"]}
+        },
+        {
+            "type": "function",
+            "name": "r_arquivo",
+            "description": "Lê o conteúdo de um arquivo existente",
+            "parameters": {"type": "object", "properties":{"name":{"type": "string", "description": "o nome do arquivo a ser lido"}}, "required": ["name"]}
+        },
+        {
+            "type": "function",
+            "name": "l_arquivos",
+            "description": "Lista os arquivos existentes",
+            "parameters": {"type": "object", "properties":{}}
+        },
+        {
+            "type": "function",
+            "name": "e_arquivo",
+            "description": "Edita o conteúdo de um arquivo existente",
+            "parameters": {"type": "object", "properties":{"content":{"type": "string", "description": "O novo conteúdo do arquivo"}, "name":{"type": "string", "description": "o nome do arquivo a ser editado"}}, "required": ["name", "content"]}
         }
     ]
 
 #Dicionario com comandos (UAUUUU!!!!!)
 funcoes = {
-    "c_arquivo":c_arquivo
+    "c_arquivo":c_arquivo,
+    "r_arquivo":r_arquivo,
+    "l_arquivos":l_arquivos,
+    "e_arquivo":e_arquivo
 }
 #cliente = Para quem mandar a mensagem?
 try:
@@ -107,7 +142,6 @@ def api_input(txt, prev):
             input = txt,
             tools=tools,
             )
-    with open()
     return response
 #loop PRINCIPAL
 while True:
