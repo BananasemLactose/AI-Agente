@@ -1,6 +1,6 @@
 import os, json, requests, tools
 from openai import OpenAI
-print("Hello World with AI!! 1.7")
+print("Hello World with AI!! 0.8")
 
 #Variaveis
 debug = False
@@ -72,6 +72,9 @@ except KeyError:
 def api_input(txt, responseid=None):
     #manda para AI
     if debug: print(f"{CINZA}{ITALICO}Debug: API request{RESET}")
+
+    if cont_token(txt) >= 1000000: print("PASSOU DO LIMITEE")
+
     if responseid == None:
         response = client.responses.create(
             model=modelo,
