@@ -1,6 +1,6 @@
 import os, json, requests
 from openai import OpenAI
-print("Hello World with AI!! 1.6")
+print("Hello World with AI!! 1.7")
 
 #Variaveis
 debug = False
@@ -59,20 +59,24 @@ RESET = "\033[0m"
 
 #ferramentas codigo-------------
 def c_arquivo(content, name):
+    "cria um arquivo"
     with open("Agent-work/"+name, "w",encoding="utf-8", errors="surrorgateescape") as arquivo:
         arquivo.write(content)
     return{"status": "sucess", "name": name}
 
 def r_arquivo(name):
+    "le o conteudo do arquivo"
     with open("Agent-work/"+name, "r",encoding="utf-8", errors="surrorgateescape") as arquivo:
         content = arquivo.read()
     return{"status": "sucess", "name": name, "content": content}
 
 def l_arquivos():
+    "lista de arquivos"
     arquivos = os.listdir("Agent-work/")
     return {"status": "sucess", "arquivos": arquivos}
 
 def e_arquivo(content, name):
+    "edita um arquivo existent"
     with open("Agent-work/"+name, "w", encoding="utf-8", errors="surrogateescape") as arquivo:
         arquivo.write(content)
     return {"status": "sucess", "name": name}
@@ -124,15 +128,14 @@ except KeyError:
     exit()
 
 #mensagem para AI
-def api_input(txt, prev):
+def api_input(txt, responseid=None):
     #manda para AI
     if debug: print(f"{CINZA}{ITALICO}Debug: API request{RESET}")
-    if prev:
+    if responseid == None:
         response = client.responses.create(
             model=modelo,
-            reasoning = {"effort": reasoning_effort},
+            reasoning = {"effort": reasoning_effort}, 
             input = txt,
-            previous_response_id=response.id,
             tools=tools,
             )
     else:
@@ -140,6 +143,7 @@ def api_input(txt, prev):
             model=modelo,
             reasoning = {"effort": reasoning_effort},
             input = txt,
+            previous_response_id=responseid,
             tools=tools,
             )
     return response
@@ -170,15 +174,7 @@ while True:
     #salvar no chat
     add_chat("user", entrada)
     #mandar para a AI-------------------
-    if debug: print(f"{CINZA}{ITALICO}Debug: API request{RESET}")
-    response = client.responses.create(
-        model=modelo,
-        reasoning = {"effort": reasoning_effort},
-        input=entrada,
-        tools=tools,
-    )
-    #salva no chat
-    add_chat("assistant", response.output_text)
+    response = api_input(read_chat())
 
     #vê se a AI pediu uma ferramenta
     while True:
@@ -191,9 +187,11 @@ while True:
                     args = json.loads(item.arguments)
                     funcao =  funcoes[item.name]
                     result = funcao(**args)
+                    add_chat("system", f"tool use: {item.name},arguments: {args} results: {result}")
+                    if debug: print(f"{CINZA}{ITALICO}Debug: tool use {item.name}, {args}{RESET}")
 
                 else: result = {'erro': "Ferramenta não encontrada"}
-
+                
                 resultados_tools.append(
                     {
                         "type":"function_call_output",
@@ -201,25 +199,27 @@ while True:
                         "output":json.dumps(result)
                     }
                 )
+
         if not resultados_tools: break
 
         #manda para AI os resultados das tools
         if debug: print(f"{CINZA}{ITALICO}Debug: API request{RESET}")
-        response = client.responses.create(
-        model=modelo,
-        input = resultados_tools,
-        previous_response_id=response.id,
-        tools=tools,
-        reasoning = {"effort": reasoning_effort},
-        )
+        response = api_input(resultados_tools, response.id)
+
     add_chat("assistant", response.output_text)
+
     print(response.output_text)
     if verbose:
         print(f'''
 {CINZA}verbose:
 Model: {response.model}
 reasoning: {reasoning_effort}
+''')
+        if response.usage is not None:
+            print(f'''
 input tokens: {response.usage.input_tokens}
-output tokens: {response.usage.output_tokens}{RESET}''')
+output tokens: {response.usage.output_tokens}{RESET}
+''')
+        else: print("erro: sem uso de tokens")
 
 print("Progama finalizado.")
