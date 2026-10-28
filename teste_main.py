@@ -1,4 +1,4 @@
-import os, json, requests
+import os, json, requests, tools
 from openai import OpenAI
 print("Hello World with AI!! 1.7")
 
@@ -26,7 +26,7 @@ def cont_token(text):
     return (tokens.json()["input_tokens"])
 #Memorias funções
 def read_chat():
-    with open("chat.json", "r", encoding="utf-8", errors="surrogateescape") as arquivo:
+    with open("chat_mem.json", "r", encoding="utf-8", errors="surrogateescape") as arquivo:
         return json.load(arquivo)
     
 def read_mem():
@@ -34,21 +34,21 @@ def read_mem():
         return arquivo.read()
     
 def add_chat(role, text):
-    with open("chat.json", "r", encoding="utf-8", errors="surrogateescape") as arquivo:
+    with open("chat_mem.json", "r", encoding="utf-8", errors="surrogateescape") as arquivo:
         h = json.load(arquivo)
     h.append(
         {"role":role, "content": [{"type":("output_text" if role == "assistant" else "input_text"),"text":text}]}
     )
-    with open("chat.json", "w", encoding="utf-8", errors="surrogateescape") as arquivo:
+    with open("chat_mem.json", "w", encoding="utf-8", errors="surrogateescape") as arquivo:
         json.dump(h, arquivo, ensure_ascii=False, indent=4)
 
 def write_mem(text):
     with open("mem.txt", "w", encoding="utf-8", errors="surrogateescape") as arquivo:
         arquivo.write(text)
 
-def reset_chat(entrada):
+def reset_chat(entrada=None):
     if entrada == None: entrada = "Você é um assistente geral, seu nome é Pietro,você é curto e direto ao ponto"
-    with open("chat.json", "w", encoding="utf-8", errors="surrogateescape") as arquivo:
+    with open("chat_mem.json", "w", encoding="utf-8", errors="surrogateescape") as arquivo:
         json.dump([{"role": "developer","content": [{"type": "input_text","text": entrada}]}], arquivo, ensure_ascii=False, indent=4)
 
 #CORES Ui Ui Ui
@@ -57,65 +57,6 @@ NEGRITO = "\033[1m"
 ITALICO = "\033[3m"
 RESET = "\033[0m"
 
-#ferramentas codigo-------------
-def c_arquivo(content, name):
-    "cria um arquivo"
-    with open("Agent-work/"+name, "w",encoding="utf-8", errors="surrorgateescape") as arquivo:
-        arquivo.write(content)
-    return{"status": "sucess", "name": name}
-
-def r_arquivo(name):
-    "le o conteudo do arquivo"
-    with open("Agent-work/"+name, "r",encoding="utf-8", errors="surrorgateescape") as arquivo:
-        content = arquivo.read()
-    return{"status": "sucess", "name": name, "content": content}
-
-def l_arquivos():
-    "lista de arquivos"
-    arquivos = os.listdir("Agent-work/")
-    return {"status": "sucess", "arquivos": arquivos}
-
-def e_arquivo(content, name):
-    "edita um arquivo existent"
-    with open("Agent-work/"+name, "w", encoding="utf-8", errors="surrogateescape") as arquivo:
-        arquivo.write(content)
-    return {"status": "sucess", "name": name}
-
-#ferramentas descrição------------
-tools=[
-        {
-            "type": "function",
-            "name": "c_arquivo",
-            "description": "Cria um arquivo contendo texto dentro, podendo ser scrips como arquivo.py por exemplo",
-            "parameters": {"type": "object", "properties":{"content":{"type": "string", "description": "O texto dentro do arquivo"}, "name": {"type": "string", "description": "o nome do arquivo, por exemmplo: main.py ou documento.txt"}}, "required": ["name", "content"]}
-        },
-        {
-            "type": "function",
-            "name": "r_arquivo",
-            "description": "Lê o conteúdo de um arquivo existente",
-            "parameters": {"type": "object", "properties":{"name":{"type": "string", "description": "o nome do arquivo a ser lido"}}, "required": ["name"]}
-        },
-        {
-            "type": "function",
-            "name": "l_arquivos",
-            "description": "Lista os arquivos existentes",
-            "parameters": {"type": "object", "properties":{}}
-        },
-        {
-            "type": "function",
-            "name": "e_arquivo",
-            "description": "Edita o conteúdo de um arquivo existente",
-            "parameters": {"type": "object", "properties":{"content":{"type": "string", "description": "O novo conteúdo do arquivo"}, "name":{"type": "string", "description": "o nome do arquivo a ser editado"}}, "required": ["name", "content"]}
-        }
-    ]
-
-#Dicionario com comandos (UAUUUU!!!!!)
-funcoes = {
-    "c_arquivo":c_arquivo,
-    "r_arquivo":r_arquivo,
-    "l_arquivos":l_arquivos,
-    "e_arquivo":e_arquivo
-}
 #cliente = Para quem mandar a mensagem?
 try:
     client = OpenAI(
@@ -136,7 +77,7 @@ def api_input(txt, responseid=None):
             model=modelo,
             reasoning = {"effort": reasoning_effort}, 
             input = txt,
-            tools=tools,
+            tools=tools.list,
             )
     else:
         response = client.responses.create(
@@ -144,7 +85,7 @@ def api_input(txt, responseid=None):
             reasoning = {"effort": reasoning_effort},
             input = txt,
             previous_response_id=responseid,
-            tools=tools,
+            tools=tools.list,
             )
     return response
 #loop PRINCIPAL
@@ -167,7 +108,7 @@ while True:
         elif entrada == "/reasoning medium": reasoning_effort = "medium"; continue
         elif entrada == "/reasoning high": reasoning_effort = "high"; continue
         elif entrada == "/reasoning xhigh": reasoning_effort = "xhigh"; continue
-        elif entrada == "/reset chat": reset_chat(None); continue
+        elif entrada == "/reset chat": reset_chat(); continue
         elif entrada == "/developer": print("/deveoper Mensagem do sistema aqui"); continue
         elif entrada.startswith("/developer") and entrada != "/developer": reset_chat(entrada.removeprefix("/developer")); print(f"Set to: {entrada.removeprefix("/developer")}"); continue
         else: print("Comando não encontrado"); continue
@@ -183,9 +124,9 @@ while True:
         for item in response.output:
             if item.type == "function_call":
 
-                if item.name in funcoes:
+                if item.name in tools.dic:
                     args = json.loads(item.arguments)
-                    funcao =  funcoes[item.name]
+                    funcao =  tools.dic[item.name]
                     result = funcao(**args)
                     add_chat("system", f"tool use: {item.name},arguments: {args} results: {result}")
                     if debug: print(f"{CINZA}{ITALICO}Debug: tool use {item.name}, {args}{RESET}")
